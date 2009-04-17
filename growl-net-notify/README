@@ -1,0 +1,26 @@
+This script is a Weechat-based script that makes use of Net::Growl for it’s Growl notifications. At the time of writing this script, the only notification program for Growl (which we borrowed from), used Mac::Growl which required Weechat to be running on the same machine as Growl.
+
+For more information on setting this script up over a reverse-proxy SSH session, or just opening the UDP port 9887 for Net::Growl, check out this blog post.
+
+Commands are as follows:
+
+/growl or /gl can be used to perform these commands:
+
+/growl on: turn on growl notifications
+/growl off: turn off growl notifications
+/growl setup [host] [password] [port]: change the parameters for registration/notification with Growl
+/growl inactive [time_in_seconds]: number of seconds of inactivity before we notify
+/growl status: gives info on notification and inactivity settings
+/growl test [message]: send a test message
+
+UPDATE: Script now works with 0.2.7-dev as well as being backward compatible with 0.2.6. And no longer depends on Parse::IRC
+
+Download growl-net-notify.pl here: http://www.mysticcoders.com/tools/downloads/growl-net-notify.pl
+
+Drop the script in ~/.weechat/perl or ~/.weechat/perl/autoload and load it with:
+
+/perl load growl-net-notify.pl
+
+If you have any questions, please contact me online at:
+
+irc.freenode.net - kinabalu (op): ##java
