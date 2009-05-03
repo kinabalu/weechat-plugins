@@ -21,6 +21,12 @@
 #
 # History:
 #
+# 2009-05-02, kinabalu <andrew AT mysticcoders DOT com>
+#       version 0.5, updated to work with latest data callback 
+#
+# 2009-04-25, kinabalu <andrew AT mysticcoders DOT com>
+#       version 0.4, version upgrade, minor cleanup of source
+#
 # 2009-04-18, kinabalu <andrew AT mysticcoders DOT com>
 #	version 0.3, version upgraded to support weechat 0.2.7+
 #
@@ -48,10 +54,6 @@
 # The script may also be auto-loaded by WeeChat.  See the
 # WeeChat manual for instructions about how to do this.
 #
-# This script was tested with WeeChat version 0.2.6.  An
-# updated version of this script will be available when
-# the new WeeChat API is officially released.
-#
 # For up-to-date information about this script, and new
 # version downloads, please go to:
 #
@@ -72,15 +74,15 @@ my $growl_active = 1;
 
 sub message_process_init {
 
-	weechat::hook_signal("weechat_pv", "highlight_privmsg");
-    weechat::hook_print( "", "", "", 1, "highlight_public" );
+    weechat::hook_signal("weechat_pv", "highlight_privmsg", "");
+    weechat::hook_print( "", "", "", 1, "highlight_public", "");
 }
 
 #
 # 0.2.7 clean version of highlighting for private messages
 #
 sub highlight_privmsg {
-    my ( $nick, $message ) = ( $_[1] =~ /(.*?)\t(.*)/ );
+    my ( $nick, $message ) = ( $_[2] =~ /(.*?)\t(.*)/ );
 		
 	send_message($nick, $message);				
 	return weechat::WEECHAT_RC_OK;	
@@ -90,7 +92,7 @@ sub highlight_privmsg {
 # 0.2.7 clean version of highlighting for public messages
 #
 sub highlight_public {
-    my ( $bufferp, undef, undef, undef, $ishilight, $nick, $message ) = @_;
+    my ( $bufferp, ,undef, undef, undef, undef, $ishilight, $nick, $message ) = @_;
 		
 	if( $ishilight == 1 ) {
 				
@@ -117,33 +119,21 @@ sub send_message {
 # smaller way to do weechat::get_plugin_config
 #
 sub getc {
-	if($weechat_version eq "0.2.6") {
-		return weechat::get_plugin_config($_[0]);
-	} else {
-		return weechat::config_get_plugin($_[0]);	
-	}
+	return weechat::config_get_plugin($_[0]);	
 }
 
 #
 # smaller way to do weechat::get_plugin_config
 #
 sub setc {
-	if($weechat_version eq "0.2.6") {
-		return weechat::set_plugin_config($_[0], $_[1]);
-	} else {		
-		return weechat::config_set_plugin($_[0], $_[1]);	
-	}
+	return weechat::config_set_plugin($_[0], $_[1]);	
 }
 
 #
 # print function
 # 
 sub prt {
-	if($weechat_version eq "0.2.6") {
-		weechat::print($_[0]);
-	} else {
-		weechat::print("buffer", $_[0]);
-	}
+	weechat::print(weechat::current_buffer(), $_[0]);
 }
 
 #
@@ -189,6 +179,7 @@ sub handler {
 	no strict 'refs';	# access symbol table
 	
 	my $server = shift;
+    my $buffer = shift;
 	my $argList = shift;
 
 	my @args = split(/ /, $argList);
@@ -244,7 +235,7 @@ sub handler {
 #
 # setup
 #
-my $version = '0.3';
+my $version = '0.5';
    
 	weechat::register("$growl_app", "kinabalu <andrew\@mysticcoders.com>", $version, "GPL3", "Send Weechat notifications thru Net::Growl", "", "");
 		
@@ -256,7 +247,7 @@ my $version = '0.3';
 								  ."inactive [time_in_seconds]: number of seconds of inactivity before we notify (default: 30)\n"
 								  ."status: gives info on notification and inactivity settings\n"
 								  ."test [message]: send a test message\n",
-								  "on|off|setup|inactive|status","handler");
+								  "on|off|setup|inactive|status","handler", "");
 
 my $default_growl_net_pass = "password";
 my $default_growl_net_client = "localhost";
