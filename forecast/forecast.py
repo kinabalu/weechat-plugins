@@ -18,7 +18,7 @@
 # Weather display in channel
 # (This script requires WeeChat 0.3.0.)
 #
-# Usage: Add "weather" to weechat.bar.status.items or other bar you like.
+# Usage: Add "forecast" command to weechat
 #        Specify city: "/set plugins.var.python.weather.city Tokyo".
 #
 # History:
@@ -46,7 +46,7 @@ from xml.dom import minidom
 from time import time
 from sys import version_info
 
-SCRIPT_NAME     = "weather"
+SCRIPT_NAME     = "forecast"
 SCRIPT_AUTHOR   = "Andrew Lombardi <andrew@mysticcoders.com>"
 SCRIPT_VERSION  = "0.1"
 SCRIPT_LICENSE  = "GPL3"
