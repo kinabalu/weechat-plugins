@@ -57,6 +57,8 @@ SCRIPT_AUTHOR	= "Andrew Lombardi <andrew@mysticcoders.com>"
 SCRIPT_VERSION	= "0.1"
 SCRIPT_LICENSE	= "GPL3"
 SCRIPT_DESC	= "In channel text to display weather from Google"
+DEGREE_SYMBOL   = u"\u00B0"
+FORMAT		= "Weather for %C: %O / %FF (%EC) - %H / %W"; 
 
 # Script options
 settings = {
@@ -81,8 +83,7 @@ last_run = 0
 
 # The last city, language and format for the need of refresh
 last_city = ''
-last_lang = ''
-last_format = ''
+default_city = ''
 
 # Cached copy of the last successful output
 gweather_output = 'WAIT'
@@ -135,14 +136,14 @@ def format_weather(weather_data):
     Returns:
       output: a string of formatted weather data.
     '''
-    output = weechat.color(weechat.config_get_plugin('output_color')) + weechat.config_get_plugin('format')
+    output = weechat.color(weechat.config_get_plugin('output_color')) + FORMAT
     output = output.replace('%C', weechat.config_get_plugin('city'))
 
     ftemp = 'N/A'
     ctemp = 'N/A'
     condition = 'N/A'
     city = weechat.config_get_plugin('city')
-    wind = 'N/A'
+    wind = 'None'
     humidity = 'N/A'
 
     if weather_data:
@@ -157,8 +158,6 @@ def format_weather(weather_data):
 	if weather_data['current_conditions'].has_key('wind_condition'):
 	    wind = weather_data['current_conditions']['wind_condition'].encode('utf-8')		
 
-    #'format'         : 'Weather for %C: %O / %FF (%EC) - Humidity: %H% / %W',
-
     output = output.replace('%F', ftemp)
     output = output.replace('%E', ctemp)
     output = output.replace('%O', condition)
@@ -171,7 +170,7 @@ def format_weather(weather_data):
     return output
 
 
-def gweather_data_cb(data, command, rc, stdout, stderr):
+def weather_data_cb(data, command, rc, stdout, stderr):
     '''
     Callback for the data fetching process.
     '''
@@ -192,9 +191,7 @@ def gweather_data_cb(data, command, rc, stdout, stderr):
 
     # Update status variables for succesful run
     last_run = time()
-    last_city = weechat.config_get_plugin('city')
-    last_lang = weechat.config_get_plugin('language')
-    last_format = weechat.config_get_plugin('format')
+    last_location = weechat.config_get_plugin('location')
     gweather_hook_process = ''
 
     if not gweather_stdout:
@@ -205,7 +202,7 @@ def gweather_data_cb(data, command, rc, stdout, stderr):
         content_type, xml_response = gweather_stdout.split('\n', 1)
     except:
         # Failed to split received data in two at carridge return
-        weechat.prnt('', '%sgweather: Invalid data received' % (weechat.prefix("error")))
+        weechat.prnt('', '%sweather: Invalid data received' % (weechat.prefix("error")))
         gweather_stdout = ''
         return weechat.WEECHAT_RC_ERROR
 
@@ -224,26 +221,27 @@ def gweather_data_cb(data, command, rc, stdout, stderr):
     weather_data = parse_google_weather(xml_response)
     gweather_output = format_weather(weather_data)
 
-    # Request bar item to update to the latest "gweather_output" 
-    weechat.bar_item_update('gweather')
-
-    weechat.prnt(weechat.current_buffer(), gweather_output);
+    weechat.command(weechat.current_buffer(), gweather_output);
 
     return weechat.WEECHAT_RC_OK
 
 
-def gweather_cb(*kwargs):
+def weather_cb(server, buffer, argList):
     ''' Callback for the Google weather bar item. '''
-    global last_run, last_city, last_lang, last_format
+    global last_run, last_city
     global gweather_output, gweather_hook_process
 
-    # Nag if user has not specified the city
-    if not weechat.config_get_plugin('city'):
-	return weechat.WEECHAT_ERROR
+    if(argList.partition(" ")[0] == "default"):
+	default_city = argList.partition(" ")[2]
+	last_city = default_city
+	weechat.prnt(weechat.current_buffer(), "Saving new location as: %s" % default_city)
 
-    # Nag if user has not specified the language
-    if not weechat.config_get_plugin('language'):
-	return weechat.WEECHAT_ERROR
+    if(default_city is ''):
+	if(argList == ''):
+		weechat.prnt(weechat.current_buffer(), "Error: no default city, provide one with command")
+		return weechat.WEECHAT_RC_ERROR
+	default_city = argList	
+	
 
     # Use cached copy if it is updated recently enough
     if weechat.config_get_plugin('city') == last_city and \
@@ -271,7 +269,7 @@ def gweather_cb(*kwargs):
                      print handler.info().dict['content-type'];\
                      print handler.read();\
                      handler.close();\"",
-        int(weechat.config_get_plugin('timeout')) * 1000, "gweather_data_cb", "")
+        int(weechat.config_get_plugin('timeout')) * 1000, "weather_data_cb", "")
 
     # The old cached string is returned here. gweather_data_cb() will 
     # request a new update after the data is fetched and parsed.
@@ -280,6 +278,10 @@ def gweather_cb(*kwargs):
 
 weechat.register(SCRIPT_NAME, SCRIPT_AUTHOR, SCRIPT_VERSION, SCRIPT_LICENSE, SCRIPT_DESC, "", "")
 
-weechat.hook_command("weather", "Display the current weather from Google", "",
-	"", "", "gweather_cb", "")
-
+weechat.hook_command("weather", 
+	"Display the current weather from Google", 
+	"[default] [zip/city]",
+	"adding default saves zip/city so arg is not needed on second run, then provide default preceding zip/city argument to resave your default", 
+	"", 
+	"weather_cb", 
+	"")
